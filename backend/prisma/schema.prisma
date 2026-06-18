@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  PHARMACIST
+}
+
+model User {
+  id            String @id @default(uuid())
+  role          Role
+  username       String @unique
+  email         String @unique
+  password      String
+
+  sales         Sale[]
+}
+
+model Customer {
+  id            String @id @default(uuid())
+  name          String
+  phoneNumber   String? @unique
+  email         String? @unique
+
+  sales         Sale[]
+}
+
+model Sale {
+  id            String @id @default(uuid())
+  subTotal      Decimal
+  discountRate  Decimal
+  taxRate       Decimal
+  totalAmount   Decimal
+  createdAt     DateTime @default(now())
+
+  saleItems     SaleItem[]
+
+  userId        String
+  customerId    String?
+
+  user          User @relation(fields: [userId], references: [id])
+
+  customer      Customer? @relation(fields: [customerId], references: [id])
+}
+
+model ProductCategory {
+  id            String @id @default(uuid())
+  name          String
+
+  products      Product[]
+}
+
+model Product {
+  id            String @id @default(uuid())
+  name          String
+  sellingPrice  Decimal
+
+  batches       Batch[]
+  
+  catId         String?
+  cat           ProductCategory? @relation(fields: [catId], references: [id])
+}
+
+model Batch {
+  id            String @id @default(uuid())
+  purchasePrice Decimal
+  quantity      Int
+  expireDate    DateTime
+
+  saleItems     SaleItem[]
+
+  productId     String
+  product      Product @relation(fields: [productId], references: [id])   
+}
+
+model SaleItem {
+  id            String @id @default(uuid())
+  quantity      Int
+  unitPrice     Decimal
+
+  saleId        String
+  batchId       String
+
+  sale          Sale @relation(fields: [saleId], references: [id])
+  batch         Batch @relation(fields: [batchId], references: [id])
+}
+
