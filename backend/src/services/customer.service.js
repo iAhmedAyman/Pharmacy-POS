@@ -3,14 +3,19 @@ import prisma from "../db/prismaClient";
 /*
 data {
     name
-    phoneNumber(unique, optional)
+    phonenumber(unique, optional)
     email(unique, optional)
 }
 */
 async function createCustomer(data) {
     try {
+        const {name, phonenumber, email} = data;
         await prisma.Customer.create({
-            data: data
+            data: {
+                name,
+                email,
+                phonenumber
+            }
         });
     } catch (error) {
         console.log('Unable to create Customer with the provided data: ', error);
@@ -31,67 +36,41 @@ async function updateCustomer(updatedData) {
     }
 }
 
-async function findCustomerById(id) {
+// filters has the searching criteria, 
+// it can have any of the following attributes or none at all: {
+//  id: string, name: string, email: string, phonenumber: string
+//  page: int, limit: int
+// }
+async function findCustomers(filters = {}) {
     try {
-        const customer = await prisma.Customer.findUnique({
-            where: {
-                id: id
-            }
-        });
-        return customer;
-    } catch (error) {
-        console.log('Unable to find Customer by the provided ID: ', error);
-        throw error;
-        return null; // Customer not found
-    }
-}
+        const {id, name, email, phonenumber, page = 1, limit = 50} = filters;
 
-async function findCustomerByEmail(email) {
-    try {
-        const customer = await prisma.Customer.findUnique({
-            where: {
-                email: email
-            }
-        });
-        return customer;
-    } catch (error) {
-        console.log('Unable to find Customer by the provided Email: ', error);
-        throw error;
-        return null; // Customer not found
-    }
-}
+        const whereClause = {}; // The where for prisma searching
 
-async function findCustomerByPhoneNumber(phoneNum) {
-    try {
-        const customer = await prisma.Customer.findUnique({
-            where: {
-                phoneNumber: phoneNum
-            }
-        });
-        return customer;
-    } catch (error) {
-        console.log('Unable to find Custe,er by the provided phone number: ', error);
-        throw error;
-        return null; // customer not found
-    }
-}
+        // Build whereClause
+        if(id) whereClause.id = id;
+        if(name) whereClause.name = name;
+        if(email) whereClause.email = email;
+        if(phonenumber) whereClause.phonenumber = phonenumber;
 
-async function getAllCustomers() {
-    try {
-        const customers = await prisma.Customer.findMany();
-        return customers;
+        // Apply query
+        const batches = await prisma.Batch.findMany({
+            where: whereClause,
+            take: Number(limit),
+            skip: (Number(page) - 1) * Number(limit)
+        });
+
+        return batches;
     } catch (error) {
-        console.log('Unable to find any customers: ', error);
+        console.log('Unable to find Batches by the provided filters: ', error);
         throw error;
-        return []; // No customers found, return empty list
+        return []; // Batches not found
     }
 }
 
 export {
     createCustomer,
     updateCustomer,
-    findCustomerById,
-    findCustomerByPhoneNumber,
-    getAllCustomers,
+    findCustomers
 };
 

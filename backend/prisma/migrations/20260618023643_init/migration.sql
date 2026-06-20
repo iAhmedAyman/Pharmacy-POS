@@ -16,7 +16,7 @@ CREATE TABLE "User" (
 CREATE TABLE "Customer" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "phoneNumber" TEXT,
+    "phonenumber" TEXT,
     "email" TEXT,
 
     CONSTRAINT "Customer_pkey" PRIMARY KEY ("id")
@@ -83,7 +83,7 @@ CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Customer_phoneNumber_key" ON "Customer"("phoneNumber");
+CREATE UNIQUE INDEX "Customer_phonenumber_key" ON "Customer"("phonenumber");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Customer_email_key" ON "Customer"("email");

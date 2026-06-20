@@ -1,17 +1,26 @@
+import { use } from "react";
 import prisma from "../db/prismaClient";
+import { Role } from "../utils/role";
 
 /*
 data {
-    role(ADMIN, PHARMACIST),
-    username(unique),
-    email(unique),
-    password(hashed)
+    id            String @id @default(uuid())
+    role          Role
+    username      String @unique
+    email         String @unique
+    password      String <- Hashed
 }
 */
 async function createUser(data) {
     try {
+        const {role, username, email, password} = data;
         const newUser = await prisma.User.create({
-            data: data
+            data: {
+                role,
+                username,
+                email,
+                password
+            }
         });
         return newUser;
     } catch (error) {
@@ -33,68 +42,41 @@ async function updateUser(updatedData) {
     }
 }
 
-async function findUserById(id) {
+// filters has the searching criteria, 
+// it can have any of the following attributes or none at all: {
+//  id: string, role: ADMIN/PHARMACIST, username: string, email: string
+//  page: int, limit: int
+// }
+async function findUsers(filters = {}) {
     try {
-        const user = await prisma.User.findUnique({
-            where: {
-                id: id
-            }
-        });
-        return user;
-    } catch (error) {
-        console.log('Unable to find User by the provided ID: ', error);
-        throw error;
-        return null; // User not found
-    }
-}
+        const {id, role, username, email, page = 1, limit = 50} = filters;
 
-async function findUserByEmail(email) {
-    try {
-        const user = await prisma.User.findUnique({
-            where: {
-                email: email
-            }
-        });
-        return user;
-    } catch (error) {
-        console.log('Unable to find User by the provided Email: ', error);
-        throw error;
-        return null; // User not found
-    }
-}
+        const whereClause = {}; // The where for prisma searching
 
-async function findUserByUsername(username) {
-    try {
-        const user = await prisma.User.findUnique({
-            where: {
-                username: username
-            }
-        });
-        return user;
-    } catch (error) {
-        console.log('Unable to find User by the provided Username: ', error);
-        throw error;
-        return null; // User not found
-    }
-}
+        // Build whereClause
+        if(id) whereClause.id = id;
+        if(role) whereClause.role = role;
+        if(username) whereClause.username = username;
+        if(email) whereClause.email = email;
 
-async function getAllUsers() {
-    try {
-        const users = await prisma.User.findMany();
+        // Apply query
+        const users = await prisma.User.findMany({
+            where: whereClause,
+            take: Number(limit),
+            skip: (Number(page) - 1) * Number(limit)
+        });
+
         return users;
     } catch (error) {
-        console.log('Unable to find any users: ', error);
+        console.log('Unable to find Users by the provided filters: ', error);
         throw error;
-        return []; // No user found, return empty list
+        return []; // Users not found
     }
 }
 
 export {
     createUser,
     updateUser,
-    findUserById,
-    findUserByEmail,
-    findUserByUsername,
-    getAllUsers,
+    findUsers
 };
 

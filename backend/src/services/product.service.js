@@ -3,7 +3,7 @@ import prisma from "../db/prismaClient";
 /*
 data {
     id            String @id @default(uuid())
-    name          String
+    name          String @unique
     sellingPrice  Decimal
     
     catId         String?
@@ -12,9 +12,10 @@ data {
 */
 async function createProduct(data) {
     try {
-        await prisma.Product.create({
+        const product = await prisma.Product.create({
             data: data
         });
+        return product;
     } catch (error) {
         console.log('Unable to create Product with the provided data: ', error);
         throw error;
@@ -34,70 +35,41 @@ async function updateProduct(updatedData) {
     }
 }
 
-async function findProductById(id) {
+// filters has the searching criteria, 
+// it can have any of the following attributes or none at all: {
+//  id: string, name: string, sellingPrice: decimal, catId: string,
+//  page: int, limit: int
+// }
+async function findProducts(filters = {}) {
     try {
-        const product = await prisma.Product.findUnique({
-            where: {
-                id: id
-            }
-        });
-        return product;
-    } catch (error) {
-        console.log('Unable to find Product by the provided ID: ', error);
-        throw error;
-        return null; // Product not found
-    }
-}
+        const {id, name, sellingPrice, catId, page = 1, limit = 50} = filters;
 
-async function findProductByName(name) {
-    try {
-        const product = await prisma.Product.findUnique({
-            where: {
-                name: name
-            }
-        });
-        return product;
-    } catch (error) {
-        console.log('Unable to find Product by the provided name: ', error);
-        throw error;
-        return null; // Product not found
-    }
-}
+        const whereClause = {}; // The where for prisma searching
 
-async function findProductsByCat(catName) {
-    try {
+        // Build whereClause
+        if(id) whereClause.id = id;
+        if(name) whereClause.name = name;
+        if(sellingPrice !== undefined) whereClause.sellingPrice = sellingPrice;
+        if(catId) whereClause.catId = catId;
+
+        // Apply query
         const products = await prisma.Product.findMany({
-            where: {
-                cat: {
-                    name: catName
-                }
-            }
+            where: whereClause,
+            take: Number(limit),
+            skip: (Number(page) - 1) * Number(limit)
         });
-        return products;
-    } catch (error) {
-        console.log('Unable to find Products by the provided category name: ', error);
-        throw error;
-        return null; // Products not found
-    }
-}
 
-async function getAllProducts() {
-    try {
-        const products = await prisma.Product.findMany();
         return products;
     } catch (error) {
-        console.log('Unable to find any Products: ', error);
+        console.log('Unable to find Products by the provided filters: ', error);
         throw error;
-        return []; // No Products found, return empty list
+        return []; // Products not found
     }
 }
 
 export {
     createProduct,
     updateProduct,
-    findProductById,
-    findProductByName,
-    findProductsByCat,
-    getAllProducts,
+    findProduct
 };
 
