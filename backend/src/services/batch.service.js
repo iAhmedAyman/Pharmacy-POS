@@ -11,11 +11,16 @@ data {
     product       Product @relation(fields: [productId], references: [id])  
 }
 */
-async function createBatch(data) {
+async function create(data) {
     try {
-        await prisma.Batch.create({
-            data: data
+        const {purchasePrice, quantity, expireDate, productId} = data;
+        const batch = await prisma.Batch.create({
+            purchasePrice,
+            quantity,
+            expireDate,
+            productId
         });
+        return batch;
     } catch (error) {
         console.log('Unable to create Batch with the provided data: ', error);
         throw error;
@@ -23,14 +28,43 @@ async function createBatch(data) {
 }
 
 // The updatedData has the id of the Product to be updated and the updated version of its data
-async function updateBatch(updatedData) {
+async function update(updatedData) {
     try {
-        await prisma.Batch.update({
+        const {id, purchasePrice, quantity, expireDate, productId} = updatedData;
+        const updatedBatch = await prisma.Batch.update({
             where: {id: updatedData.id},
-            data: updatedData
+            data: {
+                purchasePrice,
+                quantity,
+                expireDate,
+                productId
+            }
         });
+        return updatedBatch;
     } catch (error) {
         console.log('Unable to update Batch with the provided data: ', error);
+        throw error;
+    }
+}
+
+// Return a list of instructions to update a list of lists of batches (needed for the creation of sales)
+async function updateAllBatches(allBatches) {
+    try {
+        const instructions = [];
+        // Make an instruction to update each batch and add them to instructions list
+        for(const batches of allBatches) {
+            for(const batch of batches) {
+                const instruction = prisma.Batch.update({
+                                        where: {id: batch.id},
+                                        data: batch
+                                    });
+                instructions.push(instruction);
+            }
+        }
+
+        return instructions;
+    } catch (error) {
+        console.log('Unable to update all Batches with the provided data: ', error);
         throw error;
     }
 }
@@ -40,7 +74,7 @@ async function updateBatch(updatedData) {
 //  id: string, purchasePrice: decimal, minQuantity: int, minExpireDate: DateTime, productId: string,
 //  page: int, limit: int
 // }
-async function findBatches(filters = {}) {
+async function search(filters = {}) {
     try {
         const {id, purchasePrice, minQuantity, minExpireDate, productId, page = 1, limit = 50} = filters;
 
@@ -66,14 +100,14 @@ async function findBatches(filters = {}) {
         return batches;
     } catch (error) {
         console.log('Unable to find Batches by the provided filters: ', error);
-        throw error;
-        return []; // Batches not found
+        throw error; // Batches not found
     }
 }
 
 export {
-    createBatch,
-    updateBatch,
-    findBatch
+    create,
+    update,
+    updateAllBatches,
+    search
 };
 

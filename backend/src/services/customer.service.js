@@ -7,7 +7,7 @@ data {
     email(unique, optional)
 }
 */
-async function createCustomer(data) {
+async function create(data) {
     try {
         const {name, phonenumber, email} = data;
         await prisma.Customer.create({
@@ -24,8 +24,9 @@ async function createCustomer(data) {
 }
 
 // The updatedData has the id of the Customer to be updated and the updated version of its data
-async function updateCustomer(updatedData) {
+async function update(updatedData) {
     try {
+        const {id, name, phonenumber, email} = updatedData;
         await prisma.Customer.update({
             where: {id: updatedData.id},
             data: updatedData
@@ -41,7 +42,7 @@ async function updateCustomer(updatedData) {
 //  id: string, name: string, email: string, phonenumber: string
 //  page: int, limit: int
 // }
-async function findCustomers(filters = {}) {
+async function search(filters = {}) {
     try {
         const {id, name, email, phonenumber, page = 1, limit = 50} = filters;
 
@@ -54,7 +55,7 @@ async function findCustomers(filters = {}) {
         if(phonenumber) whereClause.phonenumber = phonenumber;
 
         // Apply query
-        const batches = await prisma.Batch.findMany({
+        const batches = await prisma.Customer.findMany({
             where: whereClause,
             take: Number(limit),
             skip: (Number(page) - 1) * Number(limit)
@@ -64,13 +65,12 @@ async function findCustomers(filters = {}) {
     } catch (error) {
         console.log('Unable to find Batches by the provided filters: ', error);
         throw error;
-        return []; // Batches not found
     }
 }
 
 export {
-    createCustomer,
-    updateCustomer,
-    findCustomers
+    create,
+    update,
+    search
 };
 

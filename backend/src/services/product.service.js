@@ -10,10 +10,16 @@ data {
     cat?          connect: { id: customerId } : undefined
 }
 */
-async function createProduct(data) {
+async function create(data) {
     try {
+        const {name, sellingPrice, catId = undefined} = data;
+        const dataClause = {
+            name,
+            sellingPrice
+        };
+        if(catId) dataClause.catId = catId;
         const product = await prisma.Product.create({
-            data: data
+            data: dataClause
         });
         return product;
     } catch (error) {
@@ -23,11 +29,17 @@ async function createProduct(data) {
 }
 
 // The updatedData has the id of the Product to be updated and the updated version of its data
-async function updateProduct(updatedData) {
+async function update(updatedData) {
     try {
+        const {id, name, sellingPrice, catId = undefined} = updatedData;
+        const dataClause = {
+            name,
+            sellingPrice
+        };
+        if(catId) dataClause.catId = catId;
         await prisma.Product.update({
-            where: {id: updatedData.id},
-            data: updatedData
+            where: {id: id},
+            data: dataClause
         });
     } catch (error) {
         console.log('Unable to update Product with the provided data: ', error);
@@ -37,39 +49,60 @@ async function updateProduct(updatedData) {
 
 // filters has the searching criteria, 
 // it can have any of the following attributes or none at all: {
-//  id: string, name: string, sellingPrice: decimal, catId: string,
+//  searchId: string, searchName: string, searchSellingPrice: decimal, searchCatId: string,
 //  page: int, limit: int
 // }
-async function findProducts(filters = {}) {
+// columns has the columns to be returned: {
+//  selectId: bool,
+//  selectName: bool,
+//  selectSellingPrice: bool,
+//  selectCatId: bool,
+//  selectCat: bool
+//}
+async function search(filters = {}, columns = {}) {
     try {
-        const {id, name, sellingPrice, catId, page = 1, limit = 50} = filters;
+        const {searchId, searchName, searchSellingPrice, searchCatId, page = 1, limit = 50} = filters;
 
         const whereClause = {}; // The where for prisma searching
 
         // Build whereClause
-        if(id) whereClause.id = id;
-        if(name) whereClause.name = name;
-        if(sellingPrice !== undefined) whereClause.sellingPrice = sellingPrice;
-        if(catId) whereClause.catId = catId;
+        if(searchId) whereClause.id = searchId;
+        if(searchName) whereClause.name = searchName;
+        if(searchSellingPrice !== undefined) whereClause.sellingPrice = searchSellingPrice;
+        if(searchCatId) whereClause.catId = searchCatId;
+
+        const {selectId, selectName, selectSellingPrice, selectCatId, selectCat} = columns;
+
+        const selectClause = {}; // The select for prisma column selection
+
+        // Build selectClause
+        if(selectId) selectClause.id = true;
+        if(selectName) selectClause.name = true;
+        if(selectSellingPrice !== undefined) selectClause.sellingPrice = true;
+        if(selectCatId) selectClause.catId = true;
+        if(selectCat) selectClause.cat = { select: { id: true, name: true } };
+
+        const query = {
+            take: Number(limit),
+            skip: (Number(page) - 1) * Number(limit),
+        }
+
+        if(Object.keys(whereClause).length > 0) query.where = whereClause;
+        if(Object.keys(selectClause).length > 0) query.select = selectClause;
 
         // Apply query
-        const products = await prisma.Product.findMany({
-            where: whereClause,
-            take: Number(limit),
-            skip: (Number(page) - 1) * Number(limit)
-        });
+        const products = await prisma.Product.findMany(query);
 
         return products;
     } catch (error) {
         console.log('Unable to find Products by the provided filters: ', error);
         throw error;
-        return []; // Products not found
     }
 }
 
 export {
-    createProduct,
-    updateProduct,
-    findProduct
+    create,
+    update,
+    search
 };
 

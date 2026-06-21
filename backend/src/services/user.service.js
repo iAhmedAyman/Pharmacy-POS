@@ -1,6 +1,4 @@
-import { use } from "react";
 import prisma from "../db/prismaClient";
-import { Role } from "../utils/role";
 
 /*
 data {
@@ -11,7 +9,7 @@ data {
     password      String <- Hashed
 }
 */
-async function createUser(data) {
+async function create(data) {
     try {
         const {role, username, email, password} = data;
         const newUser = await prisma.User.create({
@@ -30,11 +28,17 @@ async function createUser(data) {
 }
 
 // The updatedData has the id of the user to be updated and the updated version of its data
-async function updateUser(updatedData) {
+async function update(updatedData) {
     try {
+        const {id, role, username, email, password} = updatedData;
         await prisma.User.update({
-            where: {id: updatedData.id},
-            data: updatedData
+            where: {id: id},
+            data: {
+                role,
+                username,
+                email,
+                password
+            }
         });
     } catch (error) {
         console.log('Unable to update User with the provided data: ', error);
@@ -47,7 +51,7 @@ async function updateUser(updatedData) {
 //  id: string, role: ADMIN/PHARMACIST, username: string, email: string
 //  page: int, limit: int
 // }
-async function findUsers(filters = {}) {
+async function search(filters = {}) {
     try {
         const {id, role, username, email, page = 1, limit = 50} = filters;
 
@@ -70,13 +74,12 @@ async function findUsers(filters = {}) {
     } catch (error) {
         console.log('Unable to find Users by the provided filters: ', error);
         throw error;
-        return []; // Users not found
     }
 }
 
 export {
-    createUser,
-    updateUser,
-    findUsers
+    create,
+    update,
+    search
 };
 
