@@ -1,4 +1,4 @@
-import prisma from "../db/prismaClient";
+import prisma from "../db/prismaClient.js";
 
 /*
 data {
@@ -31,7 +31,7 @@ async function create(data) {
 async function update(updatedData) {
     try {
         const {id, role, username, email, password} = updatedData;
-        await prisma.User.update({
+        return await prisma.User.update({
             where: {id: id},
             data: {
                 role,

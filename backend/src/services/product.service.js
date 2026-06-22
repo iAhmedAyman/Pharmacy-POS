@@ -1,4 +1,4 @@
-import prisma from "../db/prismaClient";
+import prisma from "../db/prismaClient.js";
 
 /*
 data {
@@ -37,7 +37,7 @@ async function update(updatedData) {
             sellingPrice
         };
         if(catId) dataClause.catId = catId;
-        await prisma.Product.update({
+        return await prisma.Product.update({
             where: {id: id},
             data: dataClause
         });

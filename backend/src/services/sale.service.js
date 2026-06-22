@@ -1,6 +1,7 @@
-import prisma from "../db/prismaClient";
-import * as batchService from './batch.service';
-import * as productService from "./product.service";
+import prisma from "../db/prismaClient.js";
+import * as batchService from './batch.service.js';
+import * as productService from "./product.service.js";
+import calculateTotal from "../utils/calculateTotals.js";
 
 async function chooseBatches(productId, quantity, minExpireDate = undefined) {
     try {
@@ -57,9 +58,9 @@ async function getAllBatches(products) {
     }
 }
 
-// saleItem -> { quantity, unitPrice, batchId } (saleId gets linked on creation later)
 async function createSaleItemObject(items, allBatches) {
     try {
+        // saleItem -> { quantity, unitPrice, batchId } (saleId gets linked on creation later)
         const saleItems = [];
         for(let i = 0; i < items.length; i++) {
             const { productId, quantity } = items[i];
@@ -115,37 +116,39 @@ data {
 async function create(data) {
     try {
         const {
-            subTotal,
             discountRate,
             taxRate,
-            totalAmount,
-            createdAt,
             userId,
-            customerId,
-            items       // items -> { productId, quantity, minExpireDate = undefined }
+            customerId = undefined,
+            items       // items -> [{ productId, quantity, minExpireDate = undefined }]
         } = data;
 
         const allBatches = await getAllBatches(items);
         const saleItems = await createSaleItemObject(items, allBatches);
+
+        const {totalAmount, subTotal} = calculateTotal(saleItems, discountRate, taxRate);
+
+        const dataClause = {
+            subTotal,
+            discountRate,
+            taxRate,
+            totalAmount,
+            userId,
+            
+            // Create saleItems and link them to the current sale
+            saleItems: {
+                create: saleItems.map(item => ({
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    batch: { connect: { id: item.batchId } }
+                }))
+            }
+        };
+        // Optional customerId
+        if(customerId) dataClause.customerId = customerId;
+
         const saleCreationInstruction = prisma.Sale.create({
-            data: {
-                subTotal,
-                discountRate,
-                taxRate,
-                totalAmount,
-                createdAt,
-                userId,
-                customerId,
-                
-                // Create saleItems and link them to the current sale
-                saleItems: {
-                    create: saleItems.map(item => ({
-                        quantity: item.quantity,
-                        unitPrice: item.unitPrice,
-                        batch: { connect: { id: item.batchId } }
-                    }))
-                }
-            },
+            data: dataClause,
             include: {
                 saleItems: true
             }
@@ -168,7 +171,7 @@ async function create(data) {
 // The updatedData has the id of the Sale to be updated and the updated version of its data
 async function update(updatedData) {
     try {
-        await prisma.Sale.update({
+        return await prisma.Sale.update({
             where: {id: updatedData.id},
             data: updatedData
         });
@@ -183,7 +186,7 @@ async function update(updatedData) {
 //  id, createdBefore, createdAfter, totalLessThan, totalMoreThan, userId, customerId
 //  page, limit
 // }
-async function findSales(filters = {}) {
+async function search(filters = {}) {
     try {
         const {
             id, createdBefore, createdAfter, totalLessThan, 
@@ -221,6 +224,6 @@ async function findSales(filters = {}) {
 export {
     create,
     update,
-    findSales
+    search
 };
 

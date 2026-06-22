@@ -1,4 +1,4 @@
-import prisma from "../db/prismaClient";
+import prisma from "../db/prismaClient.js";
 
 /*
 data {
@@ -10,12 +10,13 @@ data {
 async function create(data) {
     try {
         const {name, phonenumber, email} = data;
-        await prisma.Customer.create({
-            data: {
-                name,
-                email,
-                phonenumber
-            }
+
+        const dataClause = {name};
+        if(email) dataClause.email = email;
+        if(phonenumber) dataClause.phonenumber = phonenumber;
+
+        return await prisma.Customer.create({
+            data: dataClause
         });
     } catch (error) {
         console.log('Unable to create Customer with the provided data: ', error);
@@ -27,9 +28,15 @@ async function create(data) {
 async function update(updatedData) {
     try {
         const {id, name, phonenumber, email} = updatedData;
-        await prisma.Customer.update({
+
+        const dataClause = {};
+        if(name) dataClause.name = name;
+        if(email) dataClause.email = email;
+        if(phonenumber) dataClause.phonenumber = phonenumber;
+
+        return await prisma.Customer.update({
             where: {id: updatedData.id},
-            data: updatedData
+            data: dataClause
         });
     } catch (error) {
         console.log('Unable to update Customer with the provided data: ', error);

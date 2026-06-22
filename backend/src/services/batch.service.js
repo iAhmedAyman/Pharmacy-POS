@@ -1,4 +1,4 @@
-import prisma from "../db/prismaClient";
+import prisma from "../db/prismaClient.js";
 
 /*
 data {
@@ -15,10 +15,12 @@ async function create(data) {
     try {
         const {purchasePrice, quantity, expireDate, productId} = data;
         const batch = await prisma.Batch.create({
-            purchasePrice,
-            quantity,
-            expireDate,
-            productId
+            data: {
+                purchasePrice,
+                quantity,
+                expireDate,
+                productId
+            }
         });
         return batch;
     } catch (error) {

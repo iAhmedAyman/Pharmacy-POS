@@ -3,7 +3,14 @@ import 'dotenv/config';
 
 // userInfor -> {id, role}
 function generateJWT(userInfo) {
-    return jwt.sign(userInfo, process.env.JWTSECRET, { expiresIn: '8h' });
+    return jwt.sign(userInfo, process.env.JWT_SECRET, { expiresIn: '8h' });
 }
 
-export default generateJWT;
+function verifyJWT(token) {
+    return jwt.verify(token, process.env.JWT_SECRET);
+}
+
+export {
+    generateJWT,
+    verifyJWT
+}

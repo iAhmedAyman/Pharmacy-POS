@@ -1,11 +1,11 @@
-import * as userService from '../services/user.service'
-import generateJWT from '../utils/JWT';
-import bcrypt from 'bcryptjs'
+import * as userService from '../services/user.service.js';
+import {generateJWT} from '../utils/JWT.js';
+import bcrypt from 'bcryptjs';
 
 const signUp = async (req, res) => {
     try {
         // Hash the password
-        const hashedPassword = await bcrypt.hash(req.bocy.password, 10);
+        const hashedPassword = await bcrypt.hash(req.body.password, 10);
         req.body.password = hashedPassword;
 
         // Create user using user service
